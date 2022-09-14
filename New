@@ -1,0 +1,104 @@
+--// Voiceline Framework 1.0.0 \\--
+if not game['Loaded'] or not game:GetService("Players").LocalPlayer then 
+    game['Loaded']:Wait();
+    game:WaitForChild(game:GetService('Players'));
+    game:GetService('Players'):WaitForChild(game:GetService("Players").LocalPlayer.Name)
+    game:GetService('Players'):WaitForChild(game:GetService("Players").LocalPlayer.Character:WaitForChild("FULLY_LOADED_CHAR"))
+end
+
+local OriginalKeyUpValue = 0
+
+function StopAudio()
+	game:GetService("Players").LocalPlayer.Character.LowerTorso.BOOMBOXSOUND:Stop()
+end
+
+function Stop(ID, Key)
+	local cor = coroutine.wrap(function()
+	wait(game:GetService("Players").LocalPlayer.Character.LowerTorso.BOOMBOXSOUND.TimeLength-0.1)
+		if game:GetService("Players").LocalPlayer.Character.LowerTorso.BOOMBOXSOUND.SoundId == "rbxassetid://"..ID and OriginalKeyUpValue == Key then
+			StopAudio()
+		end
+    end)
+cor()
+end
+
+function PlaySound(ID, STOP)
+	if game:GetService("Players").LocalPlayer.Backpack:FindFirstChild("[Boombox]") then
+		local Tool = nil
+		game:GetService("Players").LocalPlayer.Backpack["[Boombox]"].Parent = game:GetService("Players").LocalPlayer.Character
+		game:GetService("ReplicatedStorage").MainEvent:FireServer("Boombox", ID)
+		game:GetService("Players").LocalPlayer.Character["[Boombox]"].RequiresHandle = false
+		if game:GetService("Players").LocalPlayer.Character["[Boombox]"]:FindFirstChild("Handle") then
+			game:GetService("Players").LocalPlayer.Character["[Boombox]"].Handle:Destroy()
+		end
+          game:GetService("Players").LocalPlayer.Character["[Boombox]"].Parent = game:GetService("Players").LocalPlayer.Backpack
+          game:GetService("Players").LocalPlayer.PlayerGui.MainScreenGui.BoomboxFrame.Visible = false
+          if Tool ~= true then
+              if Tool then
+                  Tool.Parent = game:GetService("Players").LocalPlayer.Character
+                  game:GetService("Players").LocalPlayer.PlayerGui.MainScreenGui.BoomboxFrame.Visible = false
+              end
+          end
+          if STOP == true then
+            game:GetService("Players").LocalPlayer.Character.LowerTorso:WaitForChild("BOOMBOXSOUND")
+                local cor = coroutine.wrap(function()
+                  repeat wait() until game:GetService("Players").LocalPlayer.Character.LowerTorso.BOOMBOXSOUND.SoundId == "rbxassetid://"..ID and game:GetService("Players").LocalPlayer.Character.LowerTorso.BOOMBOXSOUND.TimeLength > 0.0001
+                  OriginalKeyUpValue = OriginalKeyUpValue+1
+                  Stop(ID, OriginalKeyUpValue)
+				end)
+			cor()
+		end
+	end
+end
+
+function Chat(Message)
+    game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(Message, "All")
+end
+
+local function GetPlayer(String)
+    String = String or 'N/A'
+    for i,v in pairs(game:GetService("Players"):GetPlayers()) do
+           if v.Name:lower():match('^'..String:lower()) or v.DisplayName:lower():match('^'..String:lower()) then
+               return v
+           end
+       end
+    return false
+end
+
+function DefaultVoiceline(ID,TRIGGER,EXTRAMESSAGE,DELAY)
+	game:GetService("Players").LocalPlayer.Chatted:Connect(function(msg)
+        if string.lower(msg) == TRIGGER:lower() then
+			PlaySound(tonumber(ID),true)
+			if EXTRAMESSAGE then
+				pcall(function()
+					wait(tonumber(DELAY))
+				end)
+			end
+		end
+	end)
+end
+
+function DetectVoiceline(ID,TRIGGER)
+    game.ReplicatedStorage.DefaultChatSystemChatEvents.OnMessageDoneFiltering.OnClientEvent:Connect(function(msg)
+        if msg.FromSpeaker == tostring(game:GetService("Players").LocalPlayer.Name) then
+            local chat = msg.Message:lower()
+            if string.find(chat,TRIGGER) then
+                PlaySound(tonumber(ID),true)
+            end
+        end
+    end)
+end
+
+function TargetVoiceline(ID,TRIGGER,EXTRAMESSAGE,DELAY)
+	game:GetService("Players").LocalPlayer.Chatted:Connect(function(msg)
+    local Target = GetPlayer(msg:match(TRIGGER .. "%s*(.+)"))
+        if Target then
+            PlaySound(tonumber(ID),true)
+            if EXTRAMESSAGE then
+                pcall(function()
+                    wait(tonumber(DELAY))
+                end)
+            end
+        end
+    end)
+end
